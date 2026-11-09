@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Horizontal tail · Aeroelastic lab</title>
+  <style>/* VIEWER_CSS */</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="mark">↗</span><div><span class="eyebrow">AEROELASTIC LAB / 01</span><h1>Horizontal tail</h1></div></div>
+  <div class="header-note"><span class="dot"></span> Clamped-root gust response <span class="divider">/</span> NACA 0012</div>
+</header>
+<main>
+  <section class="workspace" aria-label="Interactive horizontal stabilizer">
+    <div class="scene-heading"><div><span class="eyebrow">CONTINUOUS EXCITATION</span><h2>See the motion.</h2></div><span id="status" class="badge"></span></div>
+    <canvas id="scene" tabindex="0" aria-label="3D horizontal tail. Drag or use arrow keys to orbit; scroll or use plus and minus to zoom."></canvas>
+    <div id="webgl-error" role="alert" hidden>WebGL is unavailable. Enable hardware acceleration in your browser to view the 3D model.</div>
+    <div class="scene-tools"><div class="views" role="group" aria-label="Camera view"><button data-view="iso" class="selected">Perspective</button><button data-view="top">Top</button><button data-view="front">Front</button><button data-view="side">Section</button></div><button id="reset-camera" title="Reset camera">Reset view ↺</button></div>
+    <div class="scene-footer"><span>Drag to orbit · Scroll to zoom</span><span><i class="legend-key blue"></i> Bending <i class="legend-key orange"></i> Twist</span></div>
+    <div class="transport">
+      <button id="play" class="primary" aria-label="Play simulation">▶ Play</button><button id="restart" title="Restart simulation">↺</button>
+      <div class="timeline"><label for="time">Simulation time <output id="time-label">0.000 s</output></label><input id="time" type="range" min="0" max="2" step="0.001" value="0"></div>
+      <label class="loop"><input id="loop" type="checkbox" checked> Loop</label>
+    </div>
+    <div class="readouts"><div><span>LEFT TIP DISPLACEMENT</span><strong id="left-heave">0.00 <small>mm</small></strong><small id="left-twist">0.00° twist</small></div><div><span>RIGHT TIP DISPLACEMENT</span><strong id="heave">0.00 <small>mm</small></strong><small id="twist">0.00° twist</small></div><div><span>VERTICAL GUST · L / R</span><strong id="gust-readout">0 / 0</strong><small>m/s · physical values</small></div></div>
+    <div class="response-panel"><div><span class="eyebrow">TIP RESPONSE OVER TIME</span><span class="small-muted">Left <i class="legend-key mint"></i> Right <i class="legend-key blue"></i></span></div><canvas id="response-chart" aria-label="Left and right tip displacement histories"></canvas></div>
+  </section>
+  <aside>
+    <section class="panel"><span class="eyebrow">EXPERIMENT CONTROLS</span><h2>Explore the response</h2>
+      <label for="velocity">Mean airspeed <output id="velocity-label"></output></label><input id="velocity" type="range" min="1" max="60" value="15" step="0.1">
+      <p id="compute-note" class="hint" role="status" aria-live="polite">Each airspeed runs a new response. Mean speed stays constant during each record.</p>
+      <label for="excitation">Excitation</label><select id="excitation"><option value="gusts">Continuous random gusts</option><option value="combined">Gusts + periodic wake</option><option value="periodic">Periodic wake only</option><option value="release">Release and decay</option></select>
+      <label for="pattern">Left / right airflow</label><select id="pattern"><option value="mixed">Shared + local gusts</option><option value="symmetric">Together · symmetric</option><option value="antisymmetric">Opposite · antisymmetric</option></select>
+      <label for="gust-rms">Vertical gust RMS <output id="gust-label">0.25 m/s</output></label><input id="gust-rms" type="range" min="0" max="1" value="0.25" step="0.01">
+      <div id="tone-controls" class="two-fields" hidden><div><label for="tone-frequency">Wake frequency [Hz]</label><input id="tone-frequency" type="number" min="1" max="100" value="20" step="0.5"></div><div><label for="tone-amplitude">Wake peak [m/s]</label><input id="tone-amplitude" type="number" min="0" max="1" value="0.1" step="0.01"></div></div>
+      <div class="two-fields"><div><label for="motion">Motion shown</label><select id="motion"><option value="coupled">Coupled</option><option value="heave">Bending only</option><option value="twist">Twist only</option></select></div><div><label for="rate">Playback speed</label><select id="rate"><option value="0.05">0.05×</option><option value="0.15">0.15×</option><option value="0.5" selected>0.5×</option><option value="1">1×</option></select></div></div>
+      <label for="gain">Motion amplification <output id="gain-label">5×</output></label><input id="gain" type="range" min="1" max="20" value="5" step="1">
+      <p class="hint">Gusts keep exciting a stable tail; continued shaking alone does not indicate flutter. Amplification affects only the view. Tip readouts retain physical values.</p>
+      <label class="check"><input id="ghost" type="checkbox" checked> Undeformed outline</label>
+      <label class="check"><input id="axes" type="checkbox" checked> Elastic axis &amp; center of gravity</label>
+      <p id="motion-warning" class="warning" hidden></p>
+    </section>
+    <section class="panel geometry"><span class="eyebrow">YOUR HORIZONTAL STABILIZER</span><dl><div><dt>Airfoil</dt><dd>NACA 0012</dd></div><div><dt>Full span</dt><dd id="span"></dd></div><div><dt>Root / tip chord</dt><dd id="chord"></dd></div><div><dt>Planform area</dt><dd id="area"></dd></div><div><dt>Aspect ratio</dt><dd id="aspect"></dd></div></dl><p class="hint" id="attachment-note">Clamped center. Each half can bend and twist; neither tip is assigned a permanent up/down direction. Shared airflow can move both tips together.</p><div class="axis-key"><span><i class="legend-key orange"></i> Elastic axis <b id="ea"></b></span><span><i class="legend-key mint"></i> CG <b id="cg"></b></span></div></section>
+  </aside>
+  <section class="analysis panel"><div class="analysis-title"><div><span class="eyebrow">LINEAR STABILITY</span><h2>What the model predicts</h2></div><span class="small-muted">Assumed structural properties</span></div>
+    <div class="analysis-body"><div class="limits"><div><span>Oscillatory flutter</span><strong id="flutter-limit"></strong></div><div><span>Static divergence</span><strong id="divergence-limit"></strong></div><p id="critical-note" class="hint"></p><div class="chart-legend"><span class="blue-text">● Lower frequency branch</span><span class="orange-text">● Higher frequency branch</span></div></div><div class="chart-wrap"><canvas id="damping-chart" aria-label="Damping ratio against airspeed"></canvas></div></div>
+  </section>
+  <section class="assumptions"><span class="eyebrow">MODEL INPUTS &amp; INTERPRETATION</span><p id="assumptions"></p><p>Each semispan has bending and twist coordinates and Jones wake lags. The center is fixed; boom motion and structural coupling across the root are omitted. The random vertical gust is a first-order colored process with an illustrative 0.5 m length scale and 0.75 left/right correlation in mixed mode. Optional periodic airflow illustrates a wake; its amplitude and frequency need measurements. This is not a calibrated Dryden atmosphere or a separate Sears gust model. Loop repeats the generated record and resets at its beginning.</p><p>The NACA display thickness does not supply material stiffness. Responses stop at the small-motion limit (10% semispan displacement or 10° twist); nonlinear saturation alone does not establish a physical limit cycle. The vertical stabilizer is outside this model.</p><p class="source-links">References: <a href="https://ntrs.nasa.gov/citations/19850014068">NASA flutter method</a> · <a href="https://www.mathworks.com/help/aeroblks/drydenwindturbulencemodelcontinuous.html">Turbulence spectra and advection</a> · <a href="https://ntrs.nasa.gov/api/citations/19970008124/downloads/19970008124.pdf">NASA airfoil geometry</a></p></section>
+</main>
+<footer>FLUTTER ANALYSIS <span>Local simulation · No network connection required</span></footer>
+<script id="model-data" type="application/json">/* MODEL_DATA */</script>
+<script id="simulator-source" type="text/plain">/* SIMULATOR_JS */</script>
+<script>/* VIEWER_JS */</script>
+</body></html>
